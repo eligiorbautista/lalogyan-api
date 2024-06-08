@@ -1,17 +1,23 @@
 import express from "express";
 import User from "../models/users.mjs";
-
-// import bcrypt from "bcrypt";
+import AdminAuditTrail from "../models/adminAuditTrail.mjs";
 
 const router = express.Router();
 
 /* View Users */
-router.get("/api/admin/user", async (req, res) => {
+router.get("/api/users", async (req, res) => {
   try {
     const user = await User.find({});
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
+    await AdminAuditTrail.create({
+      userId: user._id,
+      action: "View",
+      details: `All users are retrived from the database.`,
+    });
+
     res.status(200).json(user);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -19,13 +25,20 @@ router.get("/api/admin/user", async (req, res) => {
 });
 
 /* View User */
-router.get("/api/admin/user/:id", async (req, res) => {
+router.get("/api/users/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const user = await User.findById(id).select("-password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
+    await AdminAuditTrail.create({
+      userId: user._id,
+      action: "View",
+      details: `Admin view a user with username: ${user.username} and email: ${user.email}`,
+    });
+
     res.status(200).json(user);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -33,7 +46,7 @@ router.get("/api/admin/user/:id", async (req, res) => {
 });
 
 /* Delete User */
-router.delete("/api/admin/user/:id", async (req, res) => {
+router.delete("/api/users/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const user = await User.findByIdAndDelete(id);
@@ -47,7 +60,7 @@ router.delete("/api/admin/user/:id", async (req, res) => {
 });
 
 /* Update User */
-router.put("/api/admin/user/:id", async (req, res) => {
+router.put("/api/users/:id", async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
   try {
@@ -62,7 +75,7 @@ router.put("/api/admin/user/:id", async (req, res) => {
 });
 
 /* Update User Permissions */
-router.put("/api/admin/user/:id/permissions", async (req, res) => {
+router.put("/api/users/:id/permissions", async (req, res) => {
   const { id } = req.params;
   const { permissions } = req.body;
   try {
